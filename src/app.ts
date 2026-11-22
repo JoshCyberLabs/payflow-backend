@@ -19,7 +19,7 @@ import { buildApiRouter, MerchantSummaryCache } from "./routes/index.ts";
 import { buildOpenApiDocument, DOCS_HTML, DOCS_INIT_SCRIPT } from "./routes/openapi.ts";
 import { asReader, TokenMetadataService } from "./lib/tokens.ts";
 import { sendApiError } from "./routes/errors.ts";
-import type { HealthResponse } from "./routes/types.ts";
+import type { HealthResponse, SyncResponse } from "./routes/types.ts";
 import type { RpcStatus } from "./lib/stellar.ts";
 import type { WebhookDispatcher } from "./lib/webhooks.ts";
 import type { Sep10Auth } from "./routes/auth.ts";
@@ -413,6 +413,29 @@ export function createApp(
       status: ready ? "ready" : lag === null ? "starting" : "catching_up",
       lag,
     });
+  });
+
+  /**
+   * Sync badge: how far behind the indexer is relative to the chain tip.
+   *
+   * Returns `indexer_ledger` (last committed ledger), `chain_ledger` (latest
+   * network ledger from the attached indexer status, or null when no indexer
+   * is running), `lag` (their difference) and `in_sync` (lag ≤ MAX_LAG).
+   * Always 200: the response body carries the status.
+   */
+  app.get("/sync", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const indexer = defaultRuntime.indexer;
+    const indexer_ledger = indexer?.cursor ?? 0;
+    const chain_ledger = indexer && indexer.latest > 0 ? indexer.latest : null;
+    const lag = chain_ledger !== null ? Math.max(0, chain_ledger - indexer_ledger) : null;
+    const body: SyncResponse = {
+      indexer_ledger,
+      chain_ledger,
+      lag,
+      in_sync: lag !== null && lag <= MAX_LAG,
+    };
+    res.json(body);
   });
 
   // Version and build information endpoint.

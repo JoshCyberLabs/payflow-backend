@@ -638,6 +638,26 @@ export interface HealthResponse {
 }
 
 /**
+ * `GET /sync`: how far behind the indexer is relative to the tip of the chain.
+ *
+ * `indexer_ledger` is the last ledger the indexer has fully processed;
+ * `chain_ledger` is the latest ledger the network has closed. When the
+ * indexer status is not available (a read-only replica with no attached
+ * indexer, for example) `chain_ledger` and `lag` are null and `in_sync` is
+ * false — the caller should fall back to `/health` for a richer picture.
+ */
+export interface SyncResponse {
+  /** Last ledger the indexer has committed to the projection. */
+  indexer_ledger: number;
+  /** Latest ledger the network has closed; null when unavailable. */
+  chain_ledger: number | null;
+  /** `chain_ledger − indexer_ledger`; null when `chain_ledger` is null. */
+  lag: number | null;
+  /** True when `lag` is known and within the acceptable threshold (120 ledgers). */
+  in_sync: boolean;
+}
+
+/**
  * Error bodies are the structured envelope `{ error: { code, message, requestId } }`;
  * `code` is stable per endpoint (see `src/routes/errors.ts` for the closed set
  * and how to extend it). This replaces the previous `{ error: <code> }` string

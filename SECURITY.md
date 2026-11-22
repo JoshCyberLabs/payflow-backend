@@ -33,6 +33,12 @@ and impact. Acknowledgement within 72 hours.
   secret store, never in `render.yaml` or a committed `.env`.
 - **The API is read-only and unauthenticated by design.** Everything it serves
   is already public on-chain. Do not add write endpoints without adding auth.
+- **Admin and read-API credentials are strictly separate.** The operator routes
+  (`/admin/*`) require `Authorization: Bearer <ADMIN_TOKEN>` and are absent
+  unless `ADMIN_TOKEN` or `ADMIN_TOKENS` is set. They are mounted on a path that
+  no read-API route can reach, and no read-API credential (including a SEP-10 JWT)
+  is accepted there. Keep `ADMIN_TOKEN` in the host's secret store; rotate it if
+  it is ever exposed, without touching `SEP10_SIGNING_KEY` or `SEP10_JWT_SECRET`.
 - **SQLite is a projection, not a source of truth.** It can be deleted and
   rebuilt from chain at any time. Never treat it as authoritative for money.
 - **RPC history is bounded.** Soroban RPC retains a limited ledger window. A

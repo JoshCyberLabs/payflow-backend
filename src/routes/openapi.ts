@@ -1389,6 +1389,34 @@ function servicePaths(): Record<string, PathItemObject> {
         },
       },
     },
+    "/sync": {
+      get: {
+        tags: ["service"],
+        summary: "Sync badge",
+        description:
+          "Returns the last ledger the indexer has committed (`indexer_ledger`), the latest ledger the network has closed (`chain_ledger`), their difference (`lag`), and whether the indexer is within the acceptable threshold of 120 ledgers (`in_sync`). Always 200; `chain_ledger` and `lag` are null when no indexer is attached.",
+        operationId: "getSync",
+        responses: {
+          "200": {
+            description: "The indexer's sync state.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    indexer_ledger: { type: "integer", description: "Last ledger the indexer has committed." },
+                    chain_ledger: { type: ["integer", "null"], description: "Latest ledger the network has closed; null when unavailable." },
+                    lag: { type: ["integer", "null"], description: "chain_ledger − indexer_ledger; null when chain_ledger is null." },
+                    in_sync: { type: "boolean", description: "True when lag is known and within 120 ledgers." },
+                  },
+                  required: ["indexer_ledger", "chain_ledger", "lag", "in_sync"],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "/ready": {
       get: {
         tags: ["service"],

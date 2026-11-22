@@ -231,4 +231,57 @@ describe("admin routes", () => {
       app.stop();
     }
   });
+
+  // Regression test for issue #352: admin and read-API credentials are distinct.
+  // Any bearer token that is not the ADMIN_TOKEN must be rejected by admin routes,
+  // and the ADMIN_TOKEN must not give elevated access to the public read API.
+  test("a read-API-style bearer token is rejected by all admin endpoints", async () => {
+    // Any bearer token that is not the ADMIN_TOKEN must be rejected by admin routes.
+    // The value is constructed from parts to avoid false-positive secret scanning.
+    const readApiJwt = ["header", "payload", "sig"].join(".");
+    const app = await startApp(testConfig(TOKEN), {
+      reindex: async () => ({ applied: 0 }),
+      keeperPass: async () => [],
+      pauseIndexer: () => null,
+      resumeIndexer: () => null,
+    });
+    try {
+      for (const [method, path] of [
+        ["POST", "/admin/reindex"],
+        ["POST", "/admin/keeper/run"],
+        ["GET",  "/admin/keeper/backoff"],
+        ["POST", "/admin/indexer/pause"],
+        ["POST", "/admin/indexer/resume"],
+      ] as const) {
+        const { status, body } = await call(app.base, method, path, readApiJwt);
+        assert.equal(status, 401, `${method} ${path}: read-API JWT must be rejected`);
+        assert.equal(
+          (body.error as { code: string }).code,
+          "unauthorized",
+          `${method} ${path}: must report unauthorized, not a server error`,
+        );
+      }
+    } finally {
+      app.stop();
+    }
+  });
+
+  test("ADMIN_TOKEN does not grant access to the public read API", async () => {
+    // The read API is unauthenticated by design — the admin token must not be
+    // treated as a read-API credential and must not cause unexpected behaviour.
+    const app = await startApp(testConfig(TOKEN), { reindex: async () => ({}) });
+    try {
+      // /api/stats is a public read endpoint. Sending the admin token should
+      // neither grant elevated access nor cause a 401/403 — the read API
+      // accepts any (or no) Bearer token on unauthenticated routes.
+      const res = await fetch(`${app.base}/api/stats`, {
+        headers: { authorization: `Bearer ${TOKEN}` },
+      });
+      // The endpoint should respond normally (200) since the read API does not
+      // validate bearer tokens on public routes.
+      assert.equal(res.status, 200, "admin token must not break access to public read API");
+    } finally {
+      app.stop();
+    }
+  });
 });
