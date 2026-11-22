@@ -377,7 +377,9 @@ export function merchantsRouter(
     if (!days.ok) return;
 
     const window = daysOf(days.value);
-    const from = Math.floor(Date.now() / 1000);
+    const fromParam = validate(req, res, "from", unixSecondsSchema.optional(), present(req.query.from));
+    if (!fromParam.ok) return;
+    const from = fromParam.value ?? Math.floor(Date.now() / 1000);
     const to = from + window * DAY_S;
 
     const mandates = await listMerchantForecastMandates(db, address.value);

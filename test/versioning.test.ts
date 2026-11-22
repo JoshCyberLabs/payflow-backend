@@ -106,7 +106,7 @@ const ROUTES = [
   `/merchants/${MERCHANT}/subscribers`,
   `/merchants/${MERCHANT}/churn`,
   `/merchants/${MERCHANT}/revenue`,
-  `/merchants/${MERCHANT}/forecast`,
+  `/merchants/${MERCHANT}/forecast?from=1000000000`,
   `/subscribers/${SUBSCRIBER}/summary`,
   `/subscribers/${SUBSCRIBER}/upcoming`,
   `/vault/${SUBSCRIBER}`,

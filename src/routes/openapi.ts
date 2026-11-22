@@ -1061,7 +1061,17 @@ function apiPaths(root: string): Record<string, PathItemObject> {
         description:
           "What the merchant's active mandates will bring in over the next N days, net of the protocol fee. Vault funding is not modelled.",
         operationId: `getMerchantForecast${operationSuffix(root)}`,
-        parameters: [addressParameter(), daysParameter()],
+        parameters: [
+          addressParameter(),
+          daysParameter(),
+          {
+            name: "from",
+            in: "query",
+            required: false,
+            description: "Start of the forecast window as a Unix timestamp in seconds. Defaults to now.",
+            schema: { type: "integer", minimum: 0 },
+          },
+        ],
         responses: {
           "200": {
             description: "The forecast.",
